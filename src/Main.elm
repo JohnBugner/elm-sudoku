@@ -14,20 +14,24 @@ main =
 
 type alias Model =
     { input : String
+    , output : String
     }
 
 init : Model
 init =
     { input = ""
+    , output = ""
     }
 
 type Event
-    = Solve String
+    = GetInput String
+    | CalcOutput
 
 update : Event -> Model -> Model
 update event model =
     case event of
-        Solve newInput -> { model | input = newInput }
+        GetInput newInput -> { model | input = newInput }
+        CalcOutput -> { model | output = String.reverse model.input }
 
 view : Model -> H.Html Event
 view model =
@@ -36,18 +40,19 @@ view model =
         [ H.textarea
             [ HA.placeholder "input"
             , HA.value model.input
-            , HE.onInput Solve
+            , HE.onInput GetInput
             ]
             []
         , H.input
             [ HA.type_ "button"
             , HA.value "Solve"
+            , HE.onClick CalcOutput
             ]
             []
         , H.textarea
             [ HA.placeholder "output"
             , HA.readonly True
-            , HA.value <| String.reverse model.input
+            , HA.value model.output
             ]
             []
         ]
