@@ -5,6 +5,8 @@ import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
 
+import Puzzle
+
 main =
     B.sandbox
         { init = init
@@ -30,8 +32,18 @@ type Event
 update : Event -> Model -> Model
 update event model =
     case event of
-        GetInput newInput -> { model | input = newInput }
-        CalcOutput -> { model | output = String.reverse model.input }
+        GetInput newInput ->
+            { model
+            | input = newInput
+            }
+        CalcOutput ->
+            { model
+            | output =
+                model.input
+                |> Puzzle.fromString Puzzle.numbersAlphabet
+                |> Puzzle.solve []
+                |> Puzzle.toString
+            }
 
 view : Model -> H.Html Event
 view model =
