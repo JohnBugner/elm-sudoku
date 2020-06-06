@@ -5,6 +5,8 @@ import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
 
+import String as Str
+
 import Puzzle
 
 main =
@@ -21,7 +23,19 @@ type alias Model =
 
 init : Model
 init =
-    { input = "003020600\n900305001\n001806400\n008102900\n700000008\n006708200\n002609500\n800203009\n005010300\n"
+    { input =
+        Str.join "\n"
+        [ "  3 2 6  "
+        , "9  3 5  1"
+        , "  18 64  "
+        , "  81 29  "
+        , "7       8"
+        , "  67 82  "
+        , "  26 95  "
+        , "8  2 3  9"
+        , "  5 1 3  "
+        , ""
+        ]
     , output = ""
     }
 
