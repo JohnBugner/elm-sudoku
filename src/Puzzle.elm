@@ -28,7 +28,7 @@ empty alphabet =
 numbersAlphabet : Alphabet
 numbersAlphabet =
     { filled = Str.toList "123456789" |> S.fromList
-    , empty = '-'
+    , empty = ' '
     }
 
 fromString : Alphabet -> String -> Puzzle
