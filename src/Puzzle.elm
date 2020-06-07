@@ -50,6 +50,33 @@ toList puzzle =
 get : (Int,Int) -> Puzzle -> Maybe Char
 get i2 puzzle = D.get i2 puzzle.cells
 
+usedCharsInRow : Int -> Puzzle -> S.Set Char
+usedCharsInRow y puzzle =
+    L.range 0 8
+    |> L.filterMap (\ x -> get (x,y) puzzle)
+    |> S.fromList
+
+usedCharsInColumn : Int -> Puzzle -> S.Set Char
+usedCharsInColumn x puzzle =
+    L.range 0 8
+    |> L.filterMap (\ y -> get (x,y) puzzle)
+    |> S.fromList
+
+usedCharsInHouse : (Int,Int) -> Puzzle -> S.Set Char
+usedCharsInHouse i2 puzzle =
+    indicesInHouse (houseIndex i2)
+    |> L.filterMap (\ i2_ -> get i2_ puzzle)
+    |> S.fromList
+
+houseIndex : (Int,Int) -> Int
+houseIndex (x,y) = (3 * (y // 3)) + (x // 3)
+
+-- fix
+indicesInHouse : Int -> List (Int,Int)
+indicesInHouse h =
+    L.repeat 9 (3 * (modBy 3 h), 3 * (h // 3))
+    |> L.map2 (\ (x1,y1) (x2,y2) -> (x1 + x2, y1 + y2)) [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
+
 -- Strategy
 
 -- fix

@@ -10,10 +10,14 @@ import String as Str
 import Puzzle
 
 type alias PuzzleOrError = Result Error Puzzle.Puzzle
+type alias Cell = ((Int,Int),Char)
 
 type Error
-    = OutOfBoundsIndex ((Int,Int),Char)
-    | IllegalCharacter ((Int,Int),Char)
+    = IndexIsOutOfBounds Cell
+    | CharacterIsNotInAlphabet Cell
+    | CharacterIsAlreadyInRow Cell
+    | CharacterIsAlreadyInColumn Cell
+    | CharacterIsAlreadyInHouse Cell
 
 fromString : Puzzle.Alphabet -> String -> PuzzleOrError
 fromString alphabet string =
@@ -30,21 +34,33 @@ fromList alphabet list =
 fromIndexedList : Puzzle.Alphabet -> List ((Int,Int),Char) -> PuzzleOrError
 fromIndexedList alphabet cells =
     let
-        maybeAddCell : ((Int,Int),Char) -> PuzzleOrError -> PuzzleOrError
-        maybeAddCell cell result =
+        addCell : Cell -> PuzzleOrError -> PuzzleOrError
+        addCell cell result =
             let
-                tryAddCell : ((Int,Int),Char) -> Puzzle.Puzzle -> PuzzleOrError
+                tryAddCell : Cell -> Puzzle.Puzzle -> PuzzleOrError
                 tryAddCell ((x,y),c) puzzle =
-                    if x <= 8 && y <= 8
-                    then
-                        if S.member c alphabet.filled || c == alphabet.empty
-                        then Ok { puzzle | cells = D.insert (x,y) c puzzle.cells }
-                        else Err (IllegalCharacter ((x,y),c))
-                    else Err (OutOfBoundsIndex ((x,y),c))
+                    if x >= 9 || y >= 9
+                    then Err (IndexIsOutOfBounds ((x,y),c))
+                    else
+                        if c == alphabet.empty
+                        then Ok puzzle
+                        else
+                            if not <| S.member c alphabet.filled
+                            then Err (CharacterIsNotInAlphabet ((x,y),c))
+                            else
+                                if S.member c (Puzzle.usedCharsInRow y puzzle)
+                                then Err (CharacterIsAlreadyInRow ((x,y),c))
+                                else
+                                    if S.member c (Puzzle.usedCharsInColumn x puzzle)
+                                    then Err (CharacterIsAlreadyInColumn ((x,y),c))
+                                    else
+                                        if S.member c (Puzzle.usedCharsInHouse (x,y) puzzle)
+                                        then Err (CharacterIsAlreadyInHouse ((x,y),c))
+                                        else Ok { puzzle | cells = D.insert (x,y) c puzzle.cells }
             in
                 R.andThen (tryAddCell cell) result
     in
-        L.foldl maybeAddCell (Ok (Puzzle.empty alphabet)) cells
+        L.foldl addCell (Ok (Puzzle.empty alphabet)) cells
 
 toString : PuzzleOrError -> String
 toString puzzleOrError =
@@ -52,5 +68,13 @@ toString puzzleOrError =
         Ok puzzle -> Puzzle.toString puzzle
         Err error ->
             case error of
-                OutOfBoundsIndex (i2,c) -> Str.concat ["Out of Bounds Index : ", Str.fromChar c, " at ", Debug.toString i2]
-                IllegalCharacter (i2,c) -> Str.concat ["Illegal Character : ", Str.fromChar c, " at ", Debug.toString i2]
+                IndexIsOutOfBounds (i2,c) ->
+                    Str.concat ["Index is out of bounds : ", Str.fromChar c, " at ", Debug.toString i2]
+                CharacterIsNotInAlphabet (i2,c) ->
+                    Str.concat ["Character is not in alphabet : ", Str.fromChar c, " at ", Debug.toString i2]
+                CharacterIsAlreadyInRow (i2,c) ->
+                    Str.concat ["Character is already in row : ", Str.fromChar c, " at ", Debug.toString i2]
+                CharacterIsAlreadyInColumn (i2,c) ->
+                    Str.concat ["Character is already in column : ", Str.fromChar c, " at ", Debug.toString i2]
+                CharacterIsAlreadyInHouse (i2,c) ->
+                    Str.concat ["Character is already in house : ", Str.fromChar c, " at ", Debug.toString i2]
