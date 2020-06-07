@@ -4,6 +4,7 @@ import Dict as D
 import List as L
 import Maybe as M
 import Matrix as Mx
+import Result as R
 import Set as S
 import String as Str
 
@@ -29,27 +30,6 @@ numbersAlphabet : Alphabet
 numbersAlphabet =
     { filled = Str.toList "123456789" |> S.fromList
     , empty = ' '
-    }
-
-fromString : Alphabet -> String -> Puzzle
-fromString alphabet string =
-    Str.lines string
-    |> L.map Str.toList
-    |> fromList alphabet
-
-fromList : Alphabet -> List (List Char) -> Puzzle
-fromList alphabet list =
-    Mx.fromList list
-    |> Mx.toIndexedList
-    |> fromIndexedList alphabet
-
-fromIndexedList : Alphabet -> List ((Int,Int),Char) -> Puzzle
-fromIndexedList alphabet list =
-    { alphabet = alphabet
-    , cells =
-        L.filter (\ ((x,y),_) -> x <= 8 && y <= 8) list
-        |> L.filter (\ ((x,y),v) -> S.member v alphabet.filled || v == alphabet.empty)
-        |> D.fromList
     }
 
 -- Lists

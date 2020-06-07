@@ -5,9 +5,11 @@ import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
 
+import Result as R
 import String as Str
 
 import Puzzle
+import PuzzleOrError
 
 main =
     B.sandbox
@@ -54,9 +56,9 @@ update event model =
             { model
             | output =
                 model.input
-                |> Puzzle.fromString Puzzle.numbersAlphabet
-                |> Puzzle.solve []
-                |> Puzzle.toString
+                |> PuzzleOrError.fromString Puzzle.numbersAlphabet
+                |> R.map (Puzzle.solve [])
+                |> PuzzleOrError.toString
             }
 
 view : Model -> H.Html Event
