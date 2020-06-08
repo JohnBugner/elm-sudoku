@@ -1,5 +1,6 @@
 module Puzzle exposing (..)
 
+import Array as A
 import Dict as D
 import List as L
 import Maybe as M
@@ -10,7 +11,7 @@ import String as Str
 
 type alias Puzzle =
     { alphabet : Alphabet
-    , cells : D.Dict (Int,Int) Char
+    , grid : Grid
     }
 
 type alias Alphabet =
@@ -18,6 +19,7 @@ type alias Alphabet =
     , empty : Char
     }
 
+type alias Grid = D.Dict (Int,Int) Char
 type alias Cell = ((Int,Int),Char)
 
 -- Creation
@@ -25,7 +27,7 @@ type alias Cell = ((Int,Int),Char)
 empty : Alphabet -> Puzzle
 empty alphabet =
     { alphabet = alphabet
-    , cells = D.empty
+    , grid = D.empty
     }
 
 numbersAlphabet : Alphabet
@@ -50,7 +52,7 @@ toList puzzle =
 -- Query
 
 get : (Int,Int) -> Puzzle -> Maybe Char
-get i2 puzzle = D.get i2 puzzle.cells
+get i2 puzzle = D.get i2 puzzle.grid
 
 usedCharsInRow : Int -> Puzzle -> S.Set Char
 usedCharsInRow y puzzle =
@@ -132,14 +134,24 @@ newlySolvedCells strategy puzzle =
                 unsolvedIndices puzzle
                 |> L.filterMap maybeNewlySolvedCell
 
-solve : List Strategy -> Puzzle -> Puzzle
+solve : List Strategy -> Puzzle -> A.Array Puzzle
 solve strategies puzzle =
     let
-        newlySolvedCells_ : List Cell
-        newlySolvedCells_ = L.concatMap (\ strategy -> newlySolvedCells strategy puzzle) strategies
+        solve_ : List Puzzle -> Puzzle -> List Puzzle
+        solve_ puzzles latestPuzzle =
+            let
+                newlySolvedCells_ : List Cell
+                newlySolvedCells_ = L.concatMap (\ strategy -> newlySolvedCells strategy latestPuzzle) strategies
+
+                newPuzzles : List Puzzle
+                newPuzzles = latestPuzzle :: puzzles
+            in
+                -- Tries the strategies in order, using the later strategies as little as possible.
+                -- If the first fails, the it tries the second. If the second succeeds, then it tries the first again.
+                case newlySolvedCells_ of
+                    [] -> newPuzzles
+                    (i2,c) :: _ -> solve_ newPuzzles { latestPuzzle | grid = D.insert i2 c latestPuzzle.grid }
     in
-        -- Tries the strategies in order, using the later strategies as little as possible.
-        -- If the first fails, the it tries the second. If the second succeeds, then it tries the first again.
-        case newlySolvedCells_ of
-            [] -> puzzle
-            (i2,c) :: _ -> solve strategies { puzzle | cells = D.insert i2 c puzzle.cells }
+        solve_ [] puzzle
+        |> L.reverse
+        |> A.fromList
