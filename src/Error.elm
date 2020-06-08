@@ -1,21 +1,21 @@
 module Error exposing (..)
 
-import String as Str
-
 import Puzzle
 
+import String
+
 type Error
-    = IndexIsOutOfBounds Puzzle.Cell
-    | CharacterIsNotInAlphabet Puzzle.Cell
-    | CharacterIsAlreadyInRow Puzzle.Cell
-    | CharacterIsAlreadyInColumn Puzzle.Cell
-    | CharacterIsAlreadyInHouse Puzzle.Cell
+    = IndexIsOutOfBounds Puzzle.FilledCell
+    | CharacterIsNotInAlphabet Puzzle.FilledCell
+    | CharacterIsAlreadyInRow Puzzle.FilledCell
+    | CharacterIsAlreadyInColumn Puzzle.FilledCell
+    | CharacterIsAlreadyInHouse Puzzle.FilledCell
 
 toString : Error -> String
 toString error =
     let
-        toString_ : String -> Puzzle.Cell -> String
-        toString_ prefix (i2,c) = Str.concat [prefix, Str.fromChar c, " at ", Debug.toString i2]
+        toString_ : String -> Puzzle.FilledCell -> String
+        toString_ prefix (i2,c) = String.concat [prefix, String.fromChar c, " at ", Debug.toString i2]
     in
         case error of
             IndexIsOutOfBounds cell -> toString_ "Index is out of bounds : " cell

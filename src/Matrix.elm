@@ -3,7 +3,6 @@ module Matrix exposing (..)
 import Array as A
 import List as L
 import Maybe as M
-import Tuple as T
 
 -- A matrix is always rectangular.
 type alias Matrix a =

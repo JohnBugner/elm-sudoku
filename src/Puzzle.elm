@@ -1,13 +1,13 @@
 module Puzzle exposing (..)
 
-import Array as A
-import Dict as D
-import List as L
-import Maybe as M
-import Matrix as Mx
-import Result as R
-import Set as S
-import String as Str
+import Array
+import Dict
+import List
+import Maybe
+import Matrix
+import Result
+import Set
+import String
 
 type alias Puzzle =
     { alphabet : Alphabet
@@ -15,24 +15,24 @@ type alias Puzzle =
     }
 
 type alias Alphabet =
-    { filled : S.Set Char
+    { filled : Set.Set Char
     , empty : Char
     }
 
-type alias Grid = D.Dict (Int,Int) Char
-type alias Cell = ((Int,Int),Char)
+type alias Grid = Dict.Dict (Int,Int) Char
+type alias FilledCell = ((Int,Int),Char)
 
 -- Creation
 
 empty : Alphabet -> Puzzle
 empty alphabet =
     { alphabet = alphabet
-    , grid = D.empty
+    , grid = Dict.empty
     }
 
 numbersAlphabet : Alphabet
 numbersAlphabet =
-    { filled = Str.toList "123456789" |> S.fromList
+    { filled = String.toList "123456789" |> Set.fromList
     , empty = ' '
     }
 
@@ -41,63 +41,63 @@ numbersAlphabet =
 toString : Puzzle -> String
 toString puzzle =
     toList puzzle
-    |> L.map Str.fromList
-    |> Str.join "\n"
+    |> List.map String.fromList
+    |> String.join "\n"
 
 toList : Puzzle -> List (List Char)
 toList puzzle =
-    Mx.initialize (9,9) (\ i2 -> get i2 puzzle |> M.withDefault puzzle.alphabet.empty)
-    |> Mx.toList
+    Matrix.initialize (9,9) (\ i2 -> get i2 puzzle |> Maybe.withDefault puzzle.alphabet.empty)
+    |> Matrix.toList
 
 -- Query
 
 get : (Int,Int) -> Puzzle -> Maybe Char
-get i2 puzzle = D.get i2 puzzle.grid
+get i2 puzzle = Dict.get i2 puzzle.grid
 
-usedCharsInRow : Int -> Puzzle -> S.Set Char
+usedCharsInRow : Int -> Puzzle -> Set.Set Char
 usedCharsInRow y puzzle =
     indicesInRow y
-    |> L.filterMap (\ i2 -> get i2 puzzle)
-    |> S.fromList
+    |> List.filterMap (\ i2 -> get i2 puzzle)
+    |> Set.fromList
 
-usedCharsInColumn : Int -> Puzzle -> S.Set Char
+usedCharsInColumn : Int -> Puzzle -> Set.Set Char
 usedCharsInColumn x puzzle =
     indicesInColumn x
-    |> L.filterMap (\ i2 -> get i2 puzzle)
-    |> S.fromList
+    |> List.filterMap (\ i2 -> get i2 puzzle)
+    |> Set.fromList
 
-usedCharsInHouse : Int -> Puzzle -> S.Set Char
+usedCharsInHouse : Int -> Puzzle -> Set.Set Char
 usedCharsInHouse h puzzle =
     indicesInHouse h
-    |> L.filterMap (\ i2_ -> get i2_ puzzle)
-    |> S.fromList
+    |> List.filterMap (\ i2_ -> get i2_ puzzle)
+    |> Set.fromList
 
-usedChars : (Int,Int) -> Puzzle -> S.Set Char
+usedChars : (Int,Int) -> Puzzle -> Set.Set Char
 usedChars (x,y) puzzle =
     usedCharsInRow y puzzle
-    |> S.union (usedCharsInColumn x puzzle)
-    |> S.union (usedCharsInHouse (houseIndex (x,y)) puzzle)
+    |> Set.union (usedCharsInColumn x puzzle)
+    |> Set.union (usedCharsInHouse (houseIndex (x,y)) puzzle)
 
-availableChars : (Int,Int) -> Puzzle -> S.Set Char
+availableChars : (Int,Int) -> Puzzle -> Set.Set Char
 availableChars i2 puzzle =
     case get i2 puzzle of
-        Just _ -> S.empty
-        Nothing -> S.diff puzzle.alphabet.filled (usedChars i2 puzzle)
+        Just _ -> Set.empty
+        Nothing -> Set.diff puzzle.alphabet.filled (usedChars i2 puzzle)
 
 indicesInRow : Int -> List (Int,Int)
 indicesInRow y =
-    L.range 0 8
-    |> L.map (\ x -> (x,y))
+    List.range 0 8
+    |> List.map (\ x -> (x,y))
 
 indicesInColumn : Int -> List (Int,Int)
 indicesInColumn x =
-    L.range 0 8
-    |> L.map (\ y -> (x,y))
+    List.range 0 8
+    |> List.map (\ y -> (x,y))
 
 indicesInHouse : Int -> List (Int,Int)
 indicesInHouse h =
-    L.repeat 9 (3 * (modBy 3 h), 3 * (h // 3))
-    |> L.map2 (\ (x1,y1) (x2,y2) -> (x1 + x2, y1 + y2)) [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
+    List.repeat 9 (3 * (modBy 3 h), 3 * (h // 3))
+    |> List.map2 (\ (x1,y1) (x2,y2) -> (x1 + x2, y1 + y2)) [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
 
 houseIndex : (Int,Int) -> Int
 houseIndex (x,y) = (3 * (y // 3)) + (x // 3)
@@ -111,37 +111,37 @@ unsolvedIndices puzzle =
                 Just _ -> Nothing
                 Nothing -> Just i2
     in
-        Mx.initialize (9,9) (\ i2 -> get i2 puzzle)
-        |> Mx.toIndexedList
-        |> L.filterMap isMaybeEmpty
+        Matrix.initialize (9,9) (\ i2 -> get i2 puzzle)
+        |> Matrix.toIndexedList
+        |> List.filterMap isMaybeEmpty
 
 -- Strategy
 
 type Strategy
     = Direct
 
-newlySolvedCells : Strategy -> Puzzle -> List Cell
+newlySolvedCells : Strategy -> Puzzle -> List FilledCell
 newlySolvedCells strategy puzzle =
     case strategy of
         Direct ->
             let
-                maybeNewlySolvedCell : (Int,Int) -> Maybe Cell
+                maybeNewlySolvedCell : (Int,Int) -> Maybe FilledCell
                 maybeNewlySolvedCell i2 =
-                    case availableChars i2 puzzle |> S.toList of
+                    case availableChars i2 puzzle |> Set.toList of
                         c :: [] -> Just (i2,c)
                         _ -> Nothing
             in
                 unsolvedIndices puzzle
-                |> L.filterMap maybeNewlySolvedCell
+                |> List.filterMap maybeNewlySolvedCell
 
-solve : List Strategy -> Puzzle -> A.Array Puzzle
+solve : List Strategy -> Puzzle -> Array.Array Puzzle
 solve strategies puzzle =
     let
         solve_ : List Puzzle -> Puzzle -> List Puzzle
         solve_ puzzles latestPuzzle =
             let
-                newlySolvedCells_ : List Cell
-                newlySolvedCells_ = L.concatMap (\ strategy -> newlySolvedCells strategy latestPuzzle) strategies
+                newlySolvedCells_ : List FilledCell
+                newlySolvedCells_ = List.concatMap (\ strategy -> newlySolvedCells strategy latestPuzzle) strategies
 
                 newPuzzles : List Puzzle
                 newPuzzles = latestPuzzle :: puzzles
@@ -150,8 +150,8 @@ solve strategies puzzle =
                 -- If the first fails, the it tries the second. If the second succeeds, then it tries the first again.
                 case newlySolvedCells_ of
                     [] -> newPuzzles
-                    (i2,c) :: _ -> solve_ newPuzzles { latestPuzzle | grid = D.insert i2 c latestPuzzle.grid }
+                    (i2,c) :: _ -> solve_ newPuzzles { latestPuzzle | grid = Dict.insert i2 c latestPuzzle.grid }
     in
         solve_ [] puzzle
-        |> L.reverse
-        |> A.fromList
+        |> List.reverse
+        |> Array.fromList

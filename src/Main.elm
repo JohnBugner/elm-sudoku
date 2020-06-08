@@ -1,24 +1,24 @@
 module Main exposing (..)
 
-import Browser as B
-import Html as H
-import Html.Attributes as HA
-import Html.Events as HE
-import Json.Decode as JD
-import Json.Encode as JE
-import VirtualDom
-
-import Array as A
-import List as L
-import Maybe as M
-import Result as R
-import String as Str
-
 import Puzzle
 import PuzzleOrError
 
+import Browser
+import Html as H
+import Html.Attributes as HA
+import Html.Events as HE
+import Json.Decode
+import Json.Encode
+import VirtualDom
+
+import Array
+import List
+import Maybe
+import Result
+import String
+
 main =
-    B.sandbox
+    Browser.sandbox
         { init = init
         , update = update
         , view = view
@@ -26,14 +26,14 @@ main =
 
 type alias Model =
     { input : String
-    , outputs : A.Array String
+    , outputs : Array.Array String
     , outputIndex : Int
     }
 
 init : Model
 init =
     { input =
-        Str.join "\n"
+        String.join "\n"
             [ "2   8 3  "
             , " 6  7  84"
             , " 3 5  2 9"
@@ -44,7 +44,7 @@ init =
             , "72  4  6 "
             , "  4 1   3"
             ]
-    , outputs = A.fromList []
+    , outputs = Array.fromList []
     , outputIndex = -1
     }
 
@@ -62,16 +62,16 @@ update event model =
             }
         CalcOutput ->
             let
-                outputs_ : A.Array String
+                outputs_ : Array.Array String
                 outputs_ =
                     model.input
                     |> PuzzleOrError.fromString Puzzle.numbersAlphabet
-                    |> R.map (Puzzle.solve [Puzzle.Direct])
+                    |> Result.map (Puzzle.solve [Puzzle.Direct])
                     |> PuzzleOrError.toStrings
             in
                 { model
                 | outputs = outputs_
-                , outputIndex = A.length outputs_ - 1
+                , outputIndex = Array.length outputs_ - 1
                 }
         SelectOutputIndex index -> 
             { model
@@ -87,17 +87,17 @@ view model =
                 alwaysStop : a -> (a, Bool)
                 alwaysStop x = (x, True)
 
-                targetSelectedIndex : JD.Decoder Int
-                targetSelectedIndex = JD.at ["target", "selectedIndex"] JD.int
+                targetSelectedIndex : Json.Decode.Decoder Int
+                targetSelectedIndex = Json.Decode.at ["target", "selectedIndex"] Json.Decode.int
             in
-                HE.stopPropagationOn "input" (JD.map alwaysStop (JD.map tagger targetSelectedIndex))
+                HE.stopPropagationOn "input" (Json.Decode.map alwaysStop (Json.Decode.map tagger targetSelectedIndex))
 
         -- This doesn't work fully, but I don't know why...
         selectedIndex : Int -> H.Attribute msg
         selectedIndex =
             let
                 intProperty : String -> Int -> H.Attribute msg
-                intProperty key int = VirtualDom.property key (JE.int int)
+                intProperty key int = VirtualDom.property key (Json.Encode.int int)
             in
                 intProperty "selectedIndex"
 
@@ -120,13 +120,13 @@ view model =
                 [ onInputTargetSelectedIndex SelectOutputIndex
                 , selectedIndex model.outputIndex
                 ]
-                ( L.range 0 (A.length model.outputs - 1)
-                |> L.map (\ i -> H.option [] [H.text (Str.fromInt i)])
+                ( List.range 0 (Array.length model.outputs - 1)
+                |> List.map (\ i -> H.option [] [H.text (String.fromInt i)])
                 )
             , H.textarea
                 [ HA.placeholder "output"
                 , HA.readonly True
-                , HA.value (A.get model.outputIndex model.outputs |> M.withDefault "")
+                , HA.value (Array.get model.outputIndex model.outputs |> Maybe.withDefault "")
                 ]
                 []
             ]
