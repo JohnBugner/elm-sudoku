@@ -57,7 +57,7 @@ update event model =
             | output =
                 model.input
                 |> PuzzleOrError.fromString Puzzle.numbersAlphabet
-                |> R.map (Puzzle.solve [])
+                |> R.map (Puzzle.solve [Puzzle.Direct])
                 |> PuzzleOrError.toString
             }
 

@@ -10,14 +10,13 @@ import String as Str
 import Puzzle
 
 type alias PuzzleOrError = Result Error Puzzle.Puzzle
-type alias Cell = ((Int,Int),Char)
 
 type Error
-    = IndexIsOutOfBounds Cell
-    | CharacterIsNotInAlphabet Cell
-    | CharacterIsAlreadyInRow Cell
-    | CharacterIsAlreadyInColumn Cell
-    | CharacterIsAlreadyInHouse Cell
+    = IndexIsOutOfBounds Puzzle.Cell
+    | CharacterIsNotInAlphabet Puzzle.Cell
+    | CharacterIsAlreadyInRow Puzzle.Cell
+    | CharacterIsAlreadyInColumn Puzzle.Cell
+    | CharacterIsAlreadyInHouse Puzzle.Cell
 
 fromString : Puzzle.Alphabet -> String -> PuzzleOrError
 fromString alphabet string =
@@ -34,10 +33,10 @@ fromList alphabet list =
 fromIndexedList : Puzzle.Alphabet -> List ((Int,Int),Char) -> PuzzleOrError
 fromIndexedList alphabet cells =
     let
-        addCell : Cell -> PuzzleOrError -> PuzzleOrError
+        addCell : Puzzle.Cell -> PuzzleOrError -> PuzzleOrError
         addCell cell result =
             let
-                tryAddCell : Cell -> Puzzle.Puzzle -> PuzzleOrError
+                tryAddCell : Puzzle.Cell -> Puzzle.Puzzle -> PuzzleOrError
                 tryAddCell ((x,y),c) puzzle =
                     if x >= 9 || y >= 9
                     then Err (IndexIsOutOfBounds ((x,y),c))
