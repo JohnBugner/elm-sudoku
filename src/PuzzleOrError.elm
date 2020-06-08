@@ -53,7 +53,7 @@ fromIndexedList alphabet cells =
                                     if S.member c (Puzzle.usedCharsInColumn x puzzle)
                                     then Err (CharacterIsAlreadyInColumn ((x,y),c))
                                     else
-                                        if S.member c (Puzzle.usedCharsInHouse (x,y) puzzle)
+                                        if S.member c (Puzzle.usedCharsInHouse (Puzzle.houseIndex (x,y)) puzzle)
                                         then Err (CharacterIsAlreadyInHouse ((x,y),c))
                                         else Ok { puzzle | cells = D.insert (x,y) c puzzle.cells }
             in
