@@ -27,13 +27,15 @@ repeat (w,h) v =
     , arrays = A.repeat h (A.repeat w v)
     }
 
--- Takes the largest rectangle possible.
+-- Height is always either 0 or maximum.
+-- Width is as far right as possible while still being a rectangle.
+-- If width == 0, then height == 0, and vice-versa.
 fromList : List (List a) -> Matrix a
 fromList list =
     let
         w =
             L.map L.length list
-            |> L.maximum
+            |> L.minimum
             |> M.withDefault 0
         h =
             if w == 0
