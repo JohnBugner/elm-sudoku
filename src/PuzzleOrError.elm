@@ -43,13 +43,13 @@ fromIndexedList alphabet cells =
                             if not <| Set.member c alphabet.filled
                             then Err (Error.CharacterIsNotInAlphabet ((x,y),c))
                             else
-                                if Set.member c (Puzzle.usedCharsInRow y puzzle)
+                                if Set.member c (Puzzle.usedCharsInGroup Puzzle.Row y puzzle)
                                 then Err (Error.CharacterIsAlreadyInRow ((x,y),c))
                                 else
-                                    if Set.member c (Puzzle.usedCharsInColumn x puzzle)
+                                    if Set.member c (Puzzle.usedCharsInGroup Puzzle.Column x puzzle)
                                     then Err (Error.CharacterIsAlreadyInColumn ((x,y),c))
                                     else
-                                        if Set.member c (Puzzle.usedCharsInHouse (Puzzle.houseIndex (x,y)) puzzle)
+                                        if Set.member c (Puzzle.usedCharsInGroup Puzzle.House (Puzzle.houseIndex (x,y)) puzzle)
                                         then Err (Error.CharacterIsAlreadyInHouse ((x,y),c))
                                         else Ok { puzzle | grid = Dict.insert (x,y) c puzzle.grid }
             in

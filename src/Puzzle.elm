@@ -54,29 +54,35 @@ toList puzzle =
 get : (Int,Int) -> Puzzle -> Maybe Char
 get i2 puzzle = Dict.get i2 puzzle.grid
 
-usedCharsInRow : Int -> Puzzle -> Set.Set Char
-usedCharsInRow y puzzle =
-    indicesInRow y
-    |> List.filterMap (\ i2 -> get i2 puzzle)
-    |> Set.fromList
+type Group
+    = Row
+    | Column
+    | House
 
-usedCharsInColumn : Int -> Puzzle -> Set.Set Char
-usedCharsInColumn x puzzle =
-    indicesInColumn x
-    |> List.filterMap (\ i2 -> get i2 puzzle)
-    |> Set.fromList
+usedCharsInGroup : Group -> Int -> Puzzle -> Set.Set Char
+usedCharsInGroup group i puzzle =
+    case group of
+        Row ->
+            indicesInGroup Row i
+            |> List.filterMap (\ i2 -> get i2 puzzle)
+            |> Set.fromList
+        Column ->
+            indicesInGroup Column i
+            |> List.filterMap (\ i2 -> get i2 puzzle)
+            |> Set.fromList
+        House ->
+            indicesInGroup House i
+            |> List.filterMap (\ i2_ -> get i2_ puzzle)
+            |> Set.fromList
 
-usedCharsInHouse : Int -> Puzzle -> Set.Set Char
-usedCharsInHouse h puzzle =
-    indicesInHouse h
-    |> List.filterMap (\ i2_ -> get i2_ puzzle)
-    |> Set.fromList
+availableCharsInGroup : Group -> Int -> Puzzle -> Set.Set Char
+availableCharsInGroup group i puzzle = Set.diff puzzle.alphabet.filled (usedCharsInGroup group i puzzle)
 
 usedChars : (Int,Int) -> Puzzle -> Set.Set Char
 usedChars (x,y) puzzle =
-    usedCharsInRow y puzzle
-    |> Set.union (usedCharsInColumn x puzzle)
-    |> Set.union (usedCharsInHouse (houseIndex (x,y)) puzzle)
+    usedCharsInGroup Row y puzzle
+    |> Set.union (usedCharsInGroup Column x puzzle)
+    |> Set.union (usedCharsInGroup House (houseIndex (x,y)) puzzle)
 
 availableChars : (Int,Int) -> Puzzle -> Set.Set Char
 availableChars i2 puzzle =
@@ -84,20 +90,18 @@ availableChars i2 puzzle =
         Just _ -> Set.empty
         Nothing -> Set.diff puzzle.alphabet.filled (usedChars i2 puzzle)
 
-indicesInRow : Int -> List (Int,Int)
-indicesInRow y =
-    List.range 0 8
-    |> List.map (\ x -> (x,y))
-
-indicesInColumn : Int -> List (Int,Int)
-indicesInColumn x =
-    List.range 0 8
-    |> List.map (\ y -> (x,y))
-
-indicesInHouse : Int -> List (Int,Int)
-indicesInHouse h =
-    List.repeat 9 (3 * (modBy 3 h), 3 * (h // 3))
-    |> List.map2 (\ (x1,y1) (x2,y2) -> (x1 + x2, y1 + y2)) [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
+indicesInGroup : Group -> Int -> List (Int,Int)
+indicesInGroup group i =
+    case group of
+        Row ->
+            List.range 0 8
+            |> List.map (\ x -> (x,i))
+        Column ->
+            List.range 0 8
+            |> List.map (\ y -> (i,y))
+        House ->
+            List.repeat 9 (3 * (modBy 3 i), 3 * (i // 3))
+            |> List.map2 (\ (x1,y1) (x2,y2) -> (x1 + x2, y1 + y2)) [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
 
 houseIndex : (Int,Int) -> Int
 houseIndex (x,y) = (3 * (y // 3)) + (x // 3)
@@ -119,6 +123,7 @@ unsolvedIndices puzzle =
 
 type Strategy
     = Direct
+    | Indirect
 
 newlySolvedCells : Strategy -> Puzzle -> List FilledCell
 newlySolvedCells strategy puzzle =
@@ -133,6 +138,25 @@ newlySolvedCells strategy puzzle =
             in
                 unsolvedIndices puzzle
                 |> List.filterMap maybeNewlySolvedCell
+        Indirect ->
+            let
+                maybeHasOneLocation : (List (Int,Int),Char) -> Maybe FilledCell
+                maybeHasOneLocation (i2s,c) =
+                    case i2s of
+                        i2 :: [] -> Just (i2,c)
+                        _ -> Nothing
+
+                ff : Group -> Int -> List FilledCell
+                ff group i =
+                    availableCharsInGroup group i puzzle
+                    |> Set.toList
+                    |> List.map (\ c -> (List.filter (\ i2 -> Set.member c (availableChars i2 puzzle)) (indicesInGroup group i),c))
+                    |> List.filterMap maybeHasOneLocation
+
+                gg : Group -> List FilledCell
+                gg group = List.concatMap (ff group) (List.range 0 8) |> Debug.log (Debug.toString group)
+            in
+                List.concatMap gg [Row, Column, House]
 
 solve : List Strategy -> Puzzle -> Array.Array Puzzle
 solve strategies puzzle =
