@@ -12,6 +12,7 @@ import Json.Encode
 import VirtualDom
 
 import Array
+import Dict
 import List
 import Maybe
 import Result
@@ -26,6 +27,8 @@ main =
 
 type alias Model =
     { input : String
+    , useDirectStrategy : Bool
+    , useIndirectStrategy : Bool
     , outputs : Array.Array String
     , outputIndex : Int
     }
@@ -44,12 +47,24 @@ init =
             , "72  4  6 "
             , "  4 1   3"
             ]
+    , useDirectStrategy = True
+    , useIndirectStrategy = True
     , outputs = Array.fromList []
     , outputIndex = -1
     }
 
+strategies : Model -> List Puzzle.Strategy
+strategies model =
+    List.concat
+        [ if model.useDirectStrategy then [Puzzle.Direct] else []
+        , if model.useIndirectStrategy then [Puzzle.Indirect] else []
+        ]
+
+
 type Event
     = GetInput String
+    | SetUseDirectStrategy Bool
+    | SetUseIndirectStrategy Bool
     | CalcOutput
     | SelectOutputIndex Int
 
@@ -60,13 +75,21 @@ update event model =
             { model
             | input = newInput
             }
+        SetUseDirectStrategy newBool ->
+            { model
+            | useDirectStrategy = newBool
+            }
+        SetUseIndirectStrategy newBool ->
+            { model
+            | useIndirectStrategy = newBool
+            }
         CalcOutput ->
             let
                 outputs_ : Array.Array String
                 outputs_ =
                     model.input
                     |> PuzzleOrError.fromString Puzzle.numbersAlphabet
-                    |> Result.map (Puzzle.solve [Puzzle.Direct, Puzzle.Indirect])
+                    |> Result.map (Puzzle.solve <| strategies model)
                     |> PuzzleOrError.toStrings
             in
                 { model
@@ -100,7 +123,6 @@ view model =
                 intProperty key int = VirtualDom.property key (Json.Encode.int int)
             in
                 intProperty "selectedIndex"
-
     in
         H.div
             []
@@ -110,6 +132,30 @@ view model =
                 , HE.onInput GetInput
                 ]
                 []
+            , H.input
+                [ HA.type_ "checkbox"
+                , HA.id "use_direct"
+                , HA.checked model.useDirectStrategy
+                , HE.onCheck SetUseDirectStrategy
+                ]
+                []
+            , H.label
+                [ HA.for "use_direct"
+                ]
+                [ H.text "Direct"
+                ]
+            , H.input
+                [ HA.type_ "checkbox"
+                , HA.id "use_indirect"
+                , HA.checked model.useIndirectStrategy
+                , HE.onCheck SetUseIndirectStrategy
+                ]
+                []
+            , H.label
+                [ HA.for "use_indirect"
+                ]
+                [ H.text "Indirect"
+                ]
             , H.input
                 [ HA.type_ "button"
                 , HA.value "Solve"
