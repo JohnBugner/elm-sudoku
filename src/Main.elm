@@ -62,7 +62,7 @@ strategies model =
 
 
 type Event
-    = GetInput String
+    = SetInput String
     | SetUseDirectStrategy Bool
     | SetUseIndirectStrategy Bool
     | CalcOutput
@@ -71,7 +71,7 @@ type Event
 update : Event -> Model -> Model
 update event model =
     case event of
-        GetInput newInput ->
+        SetInput newInput ->
             { model
             | input = newInput
             }
@@ -129,7 +129,7 @@ view model =
             [ H.textarea
                 [ HA.placeholder "input"
                 , HA.value model.input
-                , HE.onInput GetInput
+                , HE.onInput SetInput
                 ]
                 []
             , H.input
