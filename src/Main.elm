@@ -66,7 +66,7 @@ type Event
     | SetUseDirectStrategy Bool
     | SetUseIndirectStrategy Bool
     | CalcOutput
-    | SelectOutputIndex Int
+    | SelectOutputIndex String
 
 update : Event -> Model -> Model
 update event model =
@@ -96,26 +96,17 @@ update event model =
                 | outputs = outputs_
                 , outputIndex = Array.length outputs_ - 1
                 }
-        SelectOutputIndex index -> 
-            { model
-            | outputIndex = index
-            }
+        SelectOutputIndex indexString ->
+            case String.toInt indexString of
+                Just index ->
+                    { model
+                    | outputIndex = index
+                    }
+                Nothing -> model
 
 view : Model -> H.Html Event
 view model =
     let
-        onInputTargetSelectedIndex : (Int -> msg) -> H.Attribute msg
-        onInputTargetSelectedIndex tagger =
-            let
-                alwaysStop : a -> (a, Bool)
-                alwaysStop x = (x, True)
-
-                targetSelectedIndex : Json.Decode.Decoder Int
-                targetSelectedIndex = Json.Decode.at ["target", "selectedIndex"] Json.Decode.int
-            in
-                HE.stopPropagationOn "input" (Json.Decode.map alwaysStop (Json.Decode.map tagger targetSelectedIndex))
-
-        -- This doesn't work fully, but I don't know why...
         selectedIndex : Int -> H.Attribute msg
         selectedIndex =
             let
@@ -163,8 +154,8 @@ view model =
                 ]
                 []
             , H.select
-                [ onInputTargetSelectedIndex SelectOutputIndex
-                , selectedIndex model.outputIndex
+                [ selectedIndex model.outputIndex
+                , HE.onInput SelectOutputIndex
                 ]
                 ( List.range 0 (Array.length model.outputs - 1)
                 |> List.map (\ i -> H.option [] [H.text (String.fromInt i)])
